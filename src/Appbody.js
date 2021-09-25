@@ -1,39 +1,97 @@
-import React, { useState } from 'react'
-import { useForm } from "react-hook-form";
+import React, { useState, useEffect} from 'react'
+import { set, useForm } from "react-hook-form";
+import "./table.css"
 
 const Appbody = () => {
 
   const { register, handleSubmit, formState: { errors }, setValue } = useForm();
 
   const [lista, setLista] = useState([]);
+  const [alterar, setAlterar] = useState(false);
+  const [data_id, setData_id] = useState(0);
 
   const onSubmit = (data, e) => {
+    data.id= new Date().getTime()
     console.log(data);
 
-    // se houver dados salvos em localStorage, obtém esses dados (senão, vazio)
     const stocks = localStorage.getItem("stocks")
       ? JSON.parse(localStorage.getItem("stocks"))
       : "";
-
-    // salva em localstorage os dados existentes, acrescentando o preenchido no form                    
+                    
     localStorage.setItem("stocks", JSON.stringify([...stocks, data]));
 
-    // atualiza a lista
     setLista([...lista, data]);
 
-    // pode-se limpar cada campo
-//    setValue("modelo", "");
-
-    // ou, então, limpar todo o form
-    e.target.reset();
+    setValue("acao", "")
+    setValue("setor", "")
+    setValue("empresa", "")
+    setValue("preco", "")
   }
 
-  // obtém o ano atual
   const ano_atual = new Date().getFullYear();
 
+  useEffect(() => {
+    setLista(localStorage.getItem("stocks")
+    ? JSON.parse(localStorage.getItem("stocks"))
+    : [])
+  }, [])
+
+
+  const handleClick = e => {
+    const tr = e.target.closest("tr");
+
+    const id = Number(tr.getAttribute("data-id"));
+    
+    if (e.target.classList.contains("fa-edit")) {      
+
+      setValue("acao", tr.cells[0].innerText);
+      setValue("setor", tr.cells[1].innerText);
+      setValue("empresa", tr.cells[2].innerText);
+      setValue("preco", tr.cells[3].innerText);
+
+      setAlterar(true);
+      setData_id(id);
+
+    }else if (e.target.classList.contains("fa-trash-alt")){
+      const acao =tr.cells[0].innerText
+
+      if(window.confirm(`Confirma a exclusão da Ação "${acao}"?`)){
+        const novaLista = lista.filter((stock) =>{return stock.id !== id})
+
+        localStorage.setItem("stocks", JSON.stringify(novaLista))
+
+        setLista(novaLista)
+      }
+    }
+  }
+
+  const onUpdate = data => {
+    const stocks = JSON.parse(localStorage.getItem("stocks"));
+
+    const stocks2 =[]
+
+    for(const stock of stocks){
+      if (stock.id == data_id){
+        data.id =data_id
+        stocks2.push(data)
+      }else{
+        stocks2.push(stock)
+      }
+    }
+
+    localStorage.setItem(stocks, JSON.stringify(stocks2))
+    setLista(stocks2)
+
+    setValue("acao", "")
+    setValue("setor", "")
+    setValue("empresa", "")
+    setValue("preco", "")
+
+    setAlterar(false)
+  }
   return (
     <div className="row">
-      <div className="col-sm-2">
+      <div className="col-sm-12 capa">
         <img
           src="stock.png"
           alt="My Stocks"
@@ -41,8 +99,8 @@ const Appbody = () => {
         />
       </div>
 
-      <div className="col-sm-5 mt-2">
-        <form onSubmit={handleSubmit(onSubmit)}>
+      <div className="container mt-2">
+        <form onSubmit={ alterar ? handleSubmit(onUpdate) : handleSubmit(onSubmit)}>
           <div className="input-group mb-4">
             <div className="input-group-prepend">
               <span className="input-group-text">Ação:</span>
@@ -100,8 +158,13 @@ const Appbody = () => {
             <div className="input-group-append">
               <input
                 type="submit"
-                className="btn btn-primary"
+                className={alterar ? "d-none" : "btn btn-primary"}
                 value="Adicionar"
+              />
+                <input
+                type="submit"
+                className={alterar ?  "btn btn-success" : "d-none" }
+                value="Alterar"
               />
             </div>
           </div>
@@ -123,7 +186,7 @@ const Appbody = () => {
         </div>
         </div>
       
-        <div className="col-sm-5 mt-2">
+        <div className="container mt-2" >
           <div className="input-group-prepend">
         <table className="table table-striped">
           <thead>
@@ -138,12 +201,15 @@ const Appbody = () => {
           <tbody>
             {lista.map((stock) => {
               return (
-                <tr key={stock.acao}>
+                <tr key={stock.id} data-id={stock.id} onClick={handleClick}>
                   <td>{stock.acao}</td>
                   <td>{stock.setor}</td>
                   <td>{stock.empresa}</td>
                   <td>{stock.preco}</td>
-                  <td></td>
+                  <td>
+                    <i class="far fa-edit text-success mr-2" title= "Alterar"></i>
+                    <i class="fas fa-trash-alt" title="Exlcuir"></i>
+                  </td>
                 </tr>
               );
             })}
