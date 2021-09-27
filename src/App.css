@@ -1,4 +1,11 @@
 .w3-container{
     width: 100%;
-    position: fixed;
+    position:fixed;
+    
+} 
+
+.rouw{
+    height: 100%;
+    width: 100%;
+    background-color: 100%;
 }
