@@ -1,5 +1,7 @@
 import React, { useState, useEffect} from 'react'
-import { set, useForm } from "react-hook-form";
+import { useForm } from "react-hook-form";
+import {NotificationContainer} from 'react-notifications';
+import NotificationsAlert from './NotificationAlert';
 import "./table.css"
 
 const Appbody = () => {
@@ -8,6 +10,7 @@ const Appbody = () => {
 
   const [lista, setLista] = useState([]);
   const [alterar, setAlterar] = useState(false);
+  const [pesquisa, setPesquisa]= useState('')
   const [data_id, setData_id] = useState(0);
 
   const onSubmit = (data, e) => {
@@ -24,18 +27,33 @@ const Appbody = () => {
 
     setValue("acao", "")
     setValue("setor", "")
-    setValue("empresa", "")
+    setValue("nacoes", "")
     setValue("preco", "")
+    NotificationsAlert("success", "Atenção!", "Ação Cadastrada");
   }
-
-  const ano_atual = new Date().getFullYear();
 
   useEffect(() => {
     setLista(localStorage.getItem("stocks")
     ? JSON.parse(localStorage.getItem("stocks"))
     : [])
   }, [])
+  const setSearch = (palavra) => {
+    setPesquisa(palavra)
+    console.log(palavra +" - " + palavra.length)
+    let stocks = localStorage.getItem("stocks") ? JSON.parse(localStorage.getItem("stocks")): [];
 
+      if(pesquisa.length > 1){
+        stocks = stocks.filter((stock) => stock.acao.includes(pesquisa))
+        setLista(stocks)
+        if(stocks.length === 0){
+          NotificationsAlert("warning", "Atenção!", "Ação não Encontrada");
+        }
+        
+      }else{
+        stocks = localStorage.getItem("stocks") ? JSON.parse(localStorage.getItem("stocks")): [];
+        setLista(stocks);
+      }
+  }
 
   const handleClick = e => {
     const tr = e.target.closest("tr");
@@ -46,7 +64,7 @@ const Appbody = () => {
 
       setValue("acao", tr.cells[0].innerText);
       setValue("setor", tr.cells[1].innerText);
-      setValue("empresa", tr.cells[2].innerText);
+      setValue("nacoes", tr.cells[2].innerText);
       setValue("preco", tr.cells[3].innerText);
 
       setAlterar(true);
@@ -61,6 +79,7 @@ const Appbody = () => {
         localStorage.setItem("stocks", JSON.stringify(novaLista))
 
         setLista(novaLista)
+        NotificationsAlert("error", "Atenção!", "Ação excluida")
       }
     }
   }
@@ -71,7 +90,7 @@ const Appbody = () => {
     const stocks2 =[]
 
     for(const stock of stocks){
-      if (stock.id == data_id){
+      if (stock.id === data_id){
         data.id =data_id
         stocks2.push(data)
       }else{
@@ -84,18 +103,21 @@ const Appbody = () => {
 
     setValue("acao", "")
     setValue("setor", "")
-    setValue("empresa", "")
+    setValue("nacoes", "")
     setValue("preco", "")
 
     setAlterar(false)
+    NotificationsAlert("success", "Atenção!", "Ação Alterada")
   }
   return (
     <div className="row">
-      <div className="col-sm-12 capa">
-        <img
+      <div className="col-sm-12 mt-5">
+        <img 
+        height="650px"
+        width="500px"
           src="stock.png"
           alt="My Stocks"
-          className="img-fluid mx-auto d-block"
+          className="img-fluid mx-auto d-block "
         />
       </div>
 
@@ -134,25 +156,24 @@ const Appbody = () => {
           </div>
           <div className="input-group mb-3">
             <div className="input-group-prepend">
-              <span className="input-group-text">Nome da Empresa:</span>
-            </div>
-            <input
-              type="text"
-              className="form-control"
-              {...register("empresa", {
-                required: true,
-              })}
-            />
-            <div className="input-group-prepend">
-              <span className="input-group-text">Preço de Compra R$:</span>
+              <span className="input-group-text">Numero de Ações</span>
             </div>
             <input
               type="number"
               className="form-control"
+              {...register("nacoes", {
+                required: true,
+              })}/>
+
+         
+            <div className="input-group-prepend">
+              <span className="input-group-text">Preço de Compra R$:</span>
+            </div>
+            <input
+              type="text"
+              className="form-control"
               {...register("preco", {
                 required: true,
-                min: 5000,
-                max: 100000
               })}
             />
             <div className="input-group-append">
@@ -168,10 +189,24 @@ const Appbody = () => {
               />
             </div>
           </div>
-        </form>
+          <div className="input-group mb-3">
+            <div className="input-group-prepend">
+            <div className="input-group mb-3">
+            <span className="input-group-text">Pesquisa:</span>
+        </div>
+        <input
+          type="text"
+          className="form-control"
+          value={pesquisa}
+          onChange={(ev) =>setSearch(ev.target.value)}
+          autoFocus
+        />
+          </div>
+          </div>
+        
         <div
           className={
-            (errors.acao || errors.setor || errors.empresa || errors.preco) &&
+            (errors.acao || errors.setor || errors.nacoes || errors.preco) &&
             "alert alert-danger"
           }
         >
@@ -180,12 +215,11 @@ const Appbody = () => {
           )}
           {errors.setor && <span>Setor deve ser selecionado; </span>}
 
-          {errors.preco && (
-            <span>Preço deve ser preenchido (entre 5000 e 100000); </span>
-          )}
         </div>
+        <NotificationContainer/>
+        </form>
         </div>
-      
+       
         <div className="container mt-2" >
           <div className="input-group-prepend">
         <table className="table table-striped">
@@ -193,7 +227,7 @@ const Appbody = () => {
             <tr>
               <th>Codigo da Ação</th>
               <th>Setor</th>
-              <th>Nome da Empresa</th>
+              <th>Numero de Ações</th>
               <th>Preço R$</th>
               <th>Opções</th>
             </tr>
@@ -204,7 +238,7 @@ const Appbody = () => {
                 <tr key={stock.id} data-id={stock.id} onClick={handleClick}>
                   <td>{stock.acao}</td>
                   <td>{stock.setor}</td>
-                  <td>{stock.empresa}</td>
+                  <td>{stock.nacoes}</td>
                   <td>{stock.preco}</td>
                   <td>
                     <i class="far fa-edit text-success mr-2" title= "Alterar"></i>
@@ -212,6 +246,7 @@ const Appbody = () => {
                   </td>
                 </tr>
               );
+              
             })}
           </tbody>
         </table>
